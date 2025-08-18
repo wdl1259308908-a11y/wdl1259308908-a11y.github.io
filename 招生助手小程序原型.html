@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招生助手小程序原型</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Tailwind配置
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1677ff',
+                        secondary: '#ff7a45',
+                        neutral: '#f5f5f5',
+                        dark: '#333333',
+                        light: '#ffffff'
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .page {
+                @apply fixed inset-0 bg-light overflow-y-auto transition-all duration-300 ease-in-out;
+            }
+            .hidden-page {
+                @apply -translate-x-full;
+            }
+            .show-page {
+                @apply translate-x-0;
+            }
+            .tabbar {
+                @apply fixed bottom-0 left-0 right-0 bg-light border-t border-gray-200 flex justify-around items-center h-16 z-50;
+            }
+            .tabbar-item {
+                @apply flex flex-col items-center justify-center px-3 py-2;
+            }
+            .tabbar-icon {
+                @apply text-gray-500 text-xl;
+            }
+            .tabbar-icon-active {
+                @apply text-primary;
+            }
+            .tabbar-text {
+                @apply text-xs mt-1 text-gray-500;
+            }
+            .tabbar-text-active {
+                @apply text-primary;
+            }
+            .card {
+                @apply bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-4;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90;
+            }
+            .btn-outline {
+                @apply border border-primary text-primary hover:bg-primary/5;
+            }
+            .input {
+                @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-neutral text-dark">
+    <!-- 首页 -->
+    <div id="home-page" class="page show-page">
+        <!-- 头部 -->
+        <header class="bg-primary text-white p-4 sticky top-0 z-40 shadow-sm">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-bold">招生助手</h1>
+                <div class="flex space-x-4">
+                    <button class="relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">3</span>
+                    </button>
+                    <button class="relative">
+                        <i class="fas fa-envelope text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">5</span>
+                    </button>
+                </div>
+            </div>
+            <!-- 搜索栏 -->
+            <div class="mt-3 relative">
+                <input type="text" placeholder="搜索生源、院校、专业..." class="input bg-white/20 border-0 text-white placeholder-white/70 focus:ring-white/30" />
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-white">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 内容区 -->
+        <main class="pt-4 pb-20 px-4">
+            <!-- 数据概览 -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="card bg-gradient-to-br from-primary/10 to-primary/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">今日新增生源</p>
+                            <p class="text-2xl font-bold mt-1">28</p>
+                        </div>
+                        <div class="bg-primary/10 p-3 rounded-full">
+                            <i class="fas fa-user-plus text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-gradient-to-br from-secondary/10 to-secondary/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">待跟进</p>
+                            <p class="text-2xl font-bold mt-1">16</p>
+                        </div>
+                        <div class="bg-secondary/10 p-3 rounded-full">
+                            <i class="fas fa-tasks text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-gradient-to-br from-green-500/10 to-green-500/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">已转化</p>
+                            <p class="text-2xl font-bold mt-1">8</p>
+                        </div>
+                        <div class="bg-green-500/10 p-3 rounded-full">
+                            <i class="fas fa-check-circle text-green-500"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">本月业绩</p>
+                            <p class="text-2xl font-bold mt-1">¥24,600</p>
+                        </div>
+                        <div class="bg-purple-500/10 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-purple-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快捷功能 -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <button class="flex flex-col items-center justify-center p-3 rounded-lg bg-white shadow-sm">
+                    <div class="bg-blue-100 p-3 rounded-full mb-2">
+                        <i class="fas fa-user-plus text-blue-500"></i>
+                    </div>
+                    <span class="text-xs">新增生源</span>
+                </button>
+                <button class="flex flex-col items-center justify-center p-3 rounded-lg bg-white shadow-sm">
+                    <div class="bg-green-100 p-3 rounded-full mb-2">
+                        <i class="fas fa-phone-alt text-green-500"></i>
+                    </div>
+                    <span class="text-xs">快速沟通</span>
+                </button>
+                <button class="flex flex-col items-center justify-center p-3 rounded-lg bg-white shadow-sm">
+                    <div class="bg-yellow-100 p-3 rounded-full mb-2">
+                        <i class="fas fa-calendar-alt text-yellow-500"></i>
+                    </div>
+                    <span class="text-xs">跟进计划</span>
+                </button>
+                <button class="flex flex-col items-center justify-center p-3 rounded-lg bg-white shadow-sm">
+                    <div class="bg-red-100 p-3 rounded-full mb-2">
+                        <i class="fas fa-qrcode text-red-500"></i>
+                    </div>
+                    <span class="text-xs">扫码录入</span>
+                </button>
+            </div>
+
+            <!-- 待跟进列表 -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-lg">待跟进生源</h2>
+                    <button class="text-primary text-sm">查看全部</button>
+                </div>
+                <div class="space-y-3">
+                    <div class="card flex justify-between items-center">
+                        <div class="flex items-center">
+                            <img src="https://picsum.photos/50/50?random=1" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <p class="font-medium">张三</p>
+                                <p class="text-xs text-gray-500">意向专业：计算机科学与技术</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary text-sm py-1 px-3">立即跟进</button>
+                    </div>
+                    <div class="card flex justify-between items-center">
+                        <div class="flex items-center">
+                            <img src="https://picsum.photos/50/50?random=2" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <p class="font-medium">李四</p>
+                                <p class="text-xs text-gray-500">意向专业：市场营销</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary text-sm py-1 px-3">立即跟进</button>
+                    </div>
+                    <div class="card flex justify-between items-center">
+                        <div class="flex items-center">
+                            <img src="https://picsum.photos/50/50?random=3" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <p class="font-medium">王五</p>
+                                <p class="text-xs text-gray-500">意向专业：会计学</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary text-sm py-1 px-3">立即跟进</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热门院校 -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-lg">热门院校</h2>
+                    <button class="text-primary text-sm">查看全部</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="card">
+                        <img src="https://picsum.photos/200/100?random=10" alt="院校图片" class="w-full h-24 object-cover rounded-lg mb-2">
+                        <h3 class="font-medium">北京大学</h3>
+                        <p class="text-xs text-gray-500 mt-1">本科 | 综合类</p>
+                    </div>
+                    <div class="card">
+                        <img src="https://picsum.photos/200/100?random=11" alt="院校图片" class="w-full h-24 object-cover rounded-lg mb-2">
+                        <h3 class="font-medium">清华大学</h3>
+                        <p class="text-xs text-gray-500 mt-1">本科 | 综合类</p>
+                    </div>
+                    <div class="card">
+                        <img src="https://picsum.photos/200/100?random=12" alt="院校图片" class="w-full h-24 object-cover rounded-lg mb-2">
+                        <h3 class="font-medium">复旦大学</h3>
+                        <p class="text-xs text-gray-500 mt-1">本科 | 综合类</p>
+                    </div>
+                    <div class="card">
+                        <img src="https://picsum.photos/200/100?random=13" alt="院校图片" class="w-full h-24 object-cover rounded-lg mb-2">
+                        <h3 class="font-medium">上海交通大学</h3>
+                        <p class="text-xs text-gray-500 mt-1">本科 | 综合类</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 生源管理页面 -->
+    <div id="students-page" class="page hidden-page">
+        <!-- 头部 -->
+        <header class="bg-primary text-white p-4 sticky top-0 z-40 shadow-sm">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-bold">生源管理</h1>
+                <button class="btn btn-secondary text-sm py-1 px-3">
+                    <i class="fas fa-plus mr-1"></i> 新增
+                </button>
+            </div>
+            <!-- 搜索栏 -->
+            <div class="mt-3 relative">
+                <input type="text" placeholder="搜索生源..." class="input bg-white/20 border-0 text-white placeholder-white/70 focus:ring-white/30" />
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-white">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <!-- 筛选栏 -->
+            <div class="flex overflow-x-auto space-x-2 mt-3 pb-2">
+                <button class="whitespace-nowrap px-3 py-1 bg-white/20 rounded-full text-sm">全部</button>
+                <button class="whitespace-nowrap px-3 py-1 bg-white/10 rounded-full text-sm">潜在生源</button>
+                <button class="whitespace-nowrap px-3 py-1 bg-white/10 rounded-full text-sm">跟进中</button>
+                <button class="whitespace-nowrap px-3 py-1 bg-white/10 rounded-full text-sm">已报名</button>
+                <button class="whitespace-nowrap px-3 py-1 bg-white/10 rounded-full text-sm">已放弃</button>
+            </div>
+        </header>
+
+        <!-- 内容区 -->
+        <main class="pt-4 pb-20 px-4">
+            <div class="space-y-3">
+                <div class="card flex justify-between items-center">
+                    <div class="flex items-center flex-1">
+                        <img src="https://picsum.photos/50/50?random=1" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <p class="font-medium truncate">张三</p>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">潜在生源</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">意向专业：计算机科学与技术</p>
+                            <p class="text-xs text-gray-500 truncate">联系方式：138****1234</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 ml-3">
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card flex justify-between items-center">
+                    <div class="flex items-center flex-1">
+                        <img src="https://picsum.photos/50/50?random=2" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <p class="font-medium truncate">李四</p>
+                                <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">跟进中</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">意向专业：市场营销</p>
+                            <p class="text-xs text-gray-500 truncate">联系方式：139****5678</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 ml-3">
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card flex justify-between items-center">
+                    <div class="flex items-center flex-1">
+                        <img src="https://picsum.photos/50/50?random=3" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <p class="font-medium truncate">王五</p>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">已报名</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">意向专业：会计学</p>
+                            <p class="text-xs text-gray-500 truncate">联系方式：137****9012</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 ml-3">
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card flex justify-between items-center">
+                    <div class="flex items-center flex-1">
+                        <img src="https://picsum.photos/50/50?random=4" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <p class="font-medium truncate">赵六</p>
+                                <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">已放弃</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">意向专业：法学</p>
+                            <p class="text-xs text-gray-500 truncate">联系方式：136****3456</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 ml-3">
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card flex justify-between items-center">
+                    <div class="flex items-center flex-1">
+                        <img src="https://picsum.photos/50/50?random=5" alt="学生头像" class="w-10 h-10 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <p class="font-medium truncate">孙七</p>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">潜在生源</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">意向专业：教育学</p>
+                            <p class="text-xs text-gray-500 truncate">联系方式：135****7890</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 ml-3">
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="p-2 text-primary bg-primary/10 rounded-full">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 沟通页面 -->
+    <div id="communication-page" class="page hidden-page">
+        <!-- 头部 -->
+        <header class="bg-primary text-white p-4 sticky top-0 z-40 shadow-sm">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-bold">沟通管理</h1>
+                <button class="btn btn-secondary text-sm py-1 px-3">
+                    <i class="fas fa-plus mr-1"></i> 新聊天
+                </button>
+            </div>
+            <!-- 搜索栏 -->
+            <div class="mt-3 relative">
+                <input type="text" placeholder="搜索聊天..." class="input bg-white/20 border-0 text-white placeholder-white/70 focus:ring-white/30" />
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-white">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 内容区 -->
+        <main class="pt-4 pb-20 px-4">
+            <div class="space-y-3">
+                <div class="card flex items-center p-3">
+                    <div class="relative">
+                        <img src="https://picsum.photos/50/50?random=1" alt="学生头像" class="w-12 h-12 rounded-full mr-3">
+                        <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center">
+                            <p class="font-medium truncate">张三</p>
+                            <p class="text-xs text-gray-500">10:30</p>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">我对计算机专业很感兴趣，想了解更多信息</p>
+                    </div>
+                </div>
+
+                <div class="card flex items-center p-3">
+                    <div class="relative">
+                        <img src="https://picsum.photos/50/50?random=2" alt="学生头像" class="w-12 h-12 rounded-full mr-3">
+                        <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center">
+                            <p class="font-medium truncate">李四</p>
+                            <p class="text-xs text-gray-500">昨天</p>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">学费大概是多少？有奖学金吗？</p>
+                    </div>
+                </div>
+
+                <div class="card flex items-center p-3">
+                    <div class="relative">
+                        <img src="https://picsum.photos/50/50?random=3" alt="学生头像" class="w-12 h-12 rounded-full mr-3">
+                        <span class="absolute bottom-0 right-0 w-4 h-4 bg-gray-300 rounded-full border-2 border-white"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center">
+                            <p class="font-medium truncate">王五</p>
+                            <p class="text-xs text-gray-500">周三</p>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">好的，我考虑一下，明天给你答复</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 个人中心页面 -->
+    <div id="profile-page" class="page hidden-page">
+        <!-- 头部 -->
+        <header class="bg-primary text-white p-4 sticky top-0 z-40 shadow-sm">
+            <h1 class="text-xl font-bold text-center">个人中心</h1>
+        </header>
+
+        <!-- 内容区 -->
+        <main class="pt-4 pb-20 px-4">
+            <!-- 个人信息 -->
+            <div class="card flex flex-col items-center p-6 mb-6 bg-gradient-to-br from-primary/5 to-primary/10">
+                <img src="https://picsum.photos/100/100?random=100" alt="用户头像" class="w-20 h-20 rounded-full mb-3 border-4 border-white shadow-sm">
+                <h2 class="font-bold text-lg">张老师</h2>
+                <p class="text-sm text-gray-500 mb-3">XX教育机构招生顾问</p>
+                <div class="flex space-x-2">
+                    <button class="btn btn-outline text-sm">
+                        <i class="fas fa-user-edit mr-1"></i> 编辑资料
+                    </button>
+                    <button class="btn btn-primary text-sm">
+                        <i class="fas fa-crown mr-1"></i> 开通会员
+                    </button>
+                </div>
+            </div>
+
+            <!-- 数据统计 -->
+            <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+                <div class="card p-3">
+                    <p class="text-2xl font-bold text-primary">286</p>
+                    <p class="text-xs text-gray-500">总生源</p>
+                </div>
+                <div class="card p-3">
+                    <p class="text-2xl font-bold text-green-500">76</p>
+                    <p class="text-xs text-gray-500">已转化</p>
+                </div>
+                <div class="card p-3">
+                    <p class="text-2xl font-bold text-secondary">96%</p>
+                    <p class="text-xs text-gray-500">满意度</p>
+                </div>
+            </div>
+
+            <!-- 功能菜单 -->
+            <div class="space-y-1 mb-6">
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-university text-primary mr-3"></i>
+                        <span>我的院校</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </button>
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-users text-primary mr-3"></i>
+                        <span>我的团队</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </button>
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-wallet text-primary mr-3"></i>
+                        <span>账户余额</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-primary mr-2">¥2,500</span>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </button>
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-cog text-primary mr-3"></i>
+                        <span>设置</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </button>
+            </div>
+
+            <!-- 帮助中心 -->
+            <div class="space-y-1">
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-question-circle text-primary mr-3"></i>
+                        <span>帮助中心</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </button>
+                <button class="w-full card flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-comment-dots text-primary mr-3"></i>
+                        <span>意见反馈</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="tabbar">
+        <button id="home-tab" class="tabbar-item" onclick="switchPage('home')">
+            <i class="fas fa-home tabbar-icon tabbar-icon-active"></i>
+            <span class="tabbar-text tabbar-text-active">首页</span>
+        </button>
+        <button id="students-tab" class="tabbar-item" onclick="switchPage('students')">
+            <i class="fas fa-user-graduate tabbar-icon"></i>
+            <span class="tabbar-text">生源</span>
+        </button>
+        <button id="communication-tab" class="tabbar-item" onclick="switchPage('communication')">
+            <i class="fas fa-comments tabbar-icon"></i>
+            <span class="tabbar-text">沟通</span>
+        </button>
+        <button id="profile-tab" class="tabbar-item" onclick="switchPage('profile')">
+            <i class="fas fa-user tabbar-icon"></i>
+            <span class="tabbar-text">我的</span>
+        </button>
+    </div>
+
+    <script>
+        // 页面切换功能
+        function switchPage(pageName) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden-page');
+                page.classList.remove('show-page');
+            });
+
+            // 重置所有标签样式
+            document.querySelectorAll('.tabbar-icon').forEach(icon => {
+                icon.classList.remove('tabbar-icon-active');
+            });
+            document.querySelectorAll('.tabbar-text').forEach(text => {
+                text.classList.remove('tabbar-text-active');
+            });
+
+            // 显示选中页面
+            document.getElementById(`${pageName}-page`).classList.remove('hidden-page');
+            document.getElementById(`${pageName}-page`).classList.add('show-page');
+
+            // 设置选中标签样式
+            document.querySelector(`#${pageName}-tab .tabbar-icon`).classList.add('tabbar-icon-active');
+            document.querySelector(`#${pageName}-tab .tabbar-text`).classList.add('tabbar-text-active');
+        }
+    </script>
+</body>
+</html>
