@@ -292,23 +292,47 @@
             margin-bottom: 10px;
         }
 
-        .no-tts-notice {
-            background: rgba(255,255,255,0.15);
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
             color: white;
-            padding: 10px 15px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 14px;
-            margin-bottom: 15px;
-            display: none;
         }
 
-        .no-tts-notice.active {
-            display: block;
+        .start-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
 <body>
+
+<!-- 启动覆盖层（强制用户点击解锁音频） -->
+<div class="start-overlay" id="startOverlay">
+    <div style="font-size:60px;margin-bottom:20px;">👋</div>
+    <div style="font-size:24px;margin-bottom:10px;">点击开始学习英语</div>
+    <div style="font-size:14px;opacity:0.7;">需要点击以启用声音</div>
+    <button class="start-btn" onclick="startApp()">开始学习</button>
+</div>
 
 <div class="score-board">⭐ <span id="score">0</span></div>
 
@@ -318,10 +342,6 @@
 </div>
 
 <div class="game-area">
-    <div class="no-tts-notice" id="noTtsNotice">
-        💡 提示：您的浏览器不支持语音朗读，已启用音效模式
-    </div>
-    
     <div class="hint-text">👇 点击卡片听发音，左右滑动换分类</div>
     
     <div class="tabs">
@@ -358,8 +378,10 @@
 
 <script>
     // ===== 全局状态 =====
+    var audioContext = null;
+    var audioUnlocked = false;
     var hasSpeech = false;
-    var useFallbackAudio = false;
+    var useFallbackAudio = true; // 默认使用音效，因为大多数浏览器不支持 speechSynthesis
     var currentTab = 'animals';
     var score = 0;
     var isMusicOn = false;
@@ -367,7 +389,7 @@
     var currentCards = [];
     var tabNames = ['animals', 'food', 'colors', 'body', 'numbers'];
     
-    // ===== 词汇数据库（带音调频率映射，模拟发音）=====
+    // ===== 词汇数据库 =====
     var vocabulary = {
         animals: [
             { icon: '🐱', word: 'Cat', cn: '小猫', freq: 523.25 },
@@ -418,46 +440,105 @@
         score = 0;
     }
 
-    // ===== 检测语音支持 =====
-    function checkSpeechSupport() {
-        if (window.speechSynthesis) {
-            var voices = speechSynthesis.getVoices();
-            if (voices && voices.length > 0) {
-                hasSpeech = true;
-                console.log('✅ 支持 speechSynthesis，' + voices.length + ' 个语音');
-                return true;
+    // ===== 核心：创建并解锁 AudioContext =====
+    function createAudioContext() {
+        if (audioContext) return audioContext;
+        
+        try {
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                audioContext = new AudioContext();
+                console.log('AudioContext 创建成功，状态:', audioContext.state);
+                return audioContext;
+            }
+        } catch (e) {
+            console.log('AudioContext 创建失败:', e);
+        }
+        return null;
+    }
+
+    // ===== 核心：解锁音频（必须在用户点击中同步调用）=====
+    function unlockAudio() {
+        if (audioUnlocked) return true;
+        
+        console.log('🔓 解锁音频...');
+        
+        // 1. 创建/恢复 AudioContext
+        var ctx = createAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+            console.log('AudioContext resumed');
+        }
+        
+        // 2. 微信浏览器特殊处理：使用 WeixinJSBridge
+        if (typeof WeixinJSBridge !== 'undefined') {
+            try {
+                WeixinJSBridge.invoke('getNetworkType', {}, function(e) {
+                    console.log('微信网络类型:', e.err_msg);
+                    // 微信浏览器中调用这个可以解锁音频
+                });
+            } catch (e) {
+                console.log('WeixinJSBridge 调用失败:', e);
             }
         }
         
-        hasSpeech = false;
-        useFallbackAudio = true;
-        console.log('⚠️ 不支持 speechSynthesis，使用音效回退');
+        // 3. 播放一个测试音（强制浏览器允许音频）
+        try {
+            playTestSound();
+        } catch (e) {
+            console.log('测试音播放失败:', e);
+        }
         
-        // 显示提示
-        var notice = document.getElementById('noTtsNotice');
-        if (notice) notice.classList.add('active');
-        
-        return false;
+        audioUnlocked = true;
+        console.log('✅ 音频已解锁');
+        return true;
     }
 
-    // ===== 使用 Web Audio API 播放音效（替代语音）=====
-    function playSound(freq, duration) {
+    // 播放测试音（用于解锁）
+    function playTestSound() {
+        var ctx = createAudioContext();
+        if (!ctx) return;
+        
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.frequency.value = 440;
+        osc.type = 'sine';
+        
+        var now = ctx.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+        
+        osc.start(now);
+        osc.stop(now + 0.01);
+    }
+
+    // ===== 播放音效（主要播放方式）=====
+    function playSound(freq, duration, type) {
+        var ctx = createAudioContext();
+        if (!ctx) {
+            console.log('❌ AudioContext 不可用');
+            return false;
+        }
+        
+        // 确保不是 suspended 状态
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        
         try {
-            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
             
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(ctx.destination);
             
             osc.frequency.value = freq || 440;
-            osc.type = 'sine';
+            osc.type = type || 'sine';
             
-            var now = audioCtx.currentTime;
+            var now = ctx.currentTime;
             gain.gain.setValueAtTime(0.15, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + (duration || 0.4));
             
@@ -471,72 +552,38 @@
         }
     }
 
-    // ===== 播放单词（双模式：语音或音效）=====
+    // ===== 播放单词（统一入口）=====
     function speakWord(item, skipReward) {
-        console.log('🎯 点击:', item.word);
+        console.log('🎯 点击:', item.word, '频率:', item.freq);
         
-        if (hasSpeech && !useFallbackAudio) {
-            // 模式1：使用系统语音（如果可用）
-            playWithSpeech(item, skipReward);
-        } else {
-            // 模式2：使用 Web Audio 音效回退
-            playWithSound(item, skipReward);
-        }
-    }
-
-    // 模式1：系统语音
-    function playWithSpeech(item, skipReward) {
-        try {
-            var utterance = new SpeechSynthesisUtterance(item.word);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.7;
-            utterance.pitch = 1.2;
-            utterance.volume = 1;
-            speechSynthesis.speak(utterance);
-            
-            // 延迟中文
-            setTimeout(function() {
-                try {
-                    var cn = new SpeechSynthesisUtterance(item.cn);
-                    cn.lang = 'zh-CN';
-                    cn.rate = 0.8;
-                    speechSynthesis.speak(cn);
-                } catch (e) {}
-            }, 1000);
-        } catch (e) {
-            // 语音失败，切换到音效
-            playWithSound(item, skipReward);
-            return;
+        // 确保音频已解锁
+        if (!audioUnlocked) {
+            unlockAudio();
         }
         
-        if (!skipReward) {
-            showReward(item.icon);
-            score += 1;
-            try { localStorage.setItem('babyScore', score); } catch (e) {}
-            var scoreEl = document.getElementById('score');
-            if (scoreEl) scoreEl.textContent = score;
-        }
-    }
-
-    // 模式2：Web Audio 音效（无 speechSynthesis 时的回退）
-    function playWithSound(item, skipReward) {
-        // 播放英文音效（不同单词不同音调）
-        playSound(item.freq, 0.4);
+        // 使用 Web Audio 播放音效（主要方式）
+        // 英文音效
+        playSound(item.freq, 0.4, 'sine');
         
-        // 延迟播放中文音效（更低音调）
+        // 中文音效（更低音调）
         setTimeout(function() {
-            playSound(item.freq * 0.7, 0.4);
+            playSound(item.freq * 0.7, 0.4, 'triangle');
         }, 500);
         
-        // 延迟播放确认音效
+        // 确认音效
         setTimeout(function() {
-            playSound(item.freq * 1.5, 0.2);
+            playSound(item.freq * 1.5, 0.2, 'sine');
         }, 1000);
         
+        // 奖励动画
         if (!skipReward) {
             showReward(item.icon);
+            
             score += 1;
-            try { localStorage.setItem('babyScore', score); } catch (e) {}
+            try {
+                localStorage.setItem('babyScore', score);
+            } catch (e) {}
+            
             var scoreEl = document.getElementById('score');
             if (scoreEl) scoreEl.textContent = score;
         }
@@ -745,7 +792,9 @@
             }, 1600);
         } else {
             btn.classList.add('wrong');
-            if (navigator.vibrate) navigator.vibrate(200);
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
             
             // 错误音效
             playSound(200, 0.3);
@@ -808,23 +857,34 @@
         }
     });
 
+    // ===== 启动应用（用户点击后调用）=====
+    function startApp() {
+        console.log('🚀 用户点击启动');
+        
+        // 解锁音频
+        unlockAudio();
+        
+        // 隐藏启动覆盖层
+        var overlay = document.getElementById('startOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+        
+        // 初始化
+        init();
+    }
+
     // ===== 页面初始化 =====
     function init() {
-        checkSpeechSupport();
-        
         var scoreEl = document.getElementById('score');
         if (scoreEl) scoreEl.textContent = score;
         
         renderCards();
         
-        console.log('✅ 初始化完成，语音支持:', hasSpeech, '回退模式:', useFallbackAudio);
+        console.log('✅ 初始化完成');
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    // 页面加载时不自动初始化，等待用户点击 startApp
 </script>
 
 </body>
