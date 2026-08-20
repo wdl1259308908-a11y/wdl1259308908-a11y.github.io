@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>宝宝英语乐园</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 10px 10px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+            letter-spacing: 2px;
+        }
+
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 28px;
+        }
+
+        .game-area {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 10px 15px 120px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 22px;
+            border-radius: 50px;
+            border: 3px solid white;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            -webkit-appearance: none;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            transform: scale(1.08);
+        }
+
+        .tab:active {
+            transform: scale(0.92);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 5px;
+        }
+
+        @media (min-width: 768px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 25px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .card::after {
+            content: '🔊';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            opacity: 0.4;
+        }
+
+        .card:active {
+            transform: scale(0.92) rotate(1deg);
+        }
+
+        .card-icon {
+            font-size: 70px;
+            margin-bottom: 12px;
+            display: block;
+            line-height: 1;
+        }
+
+        .card-word {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 6px;
+        }
+
+        .card-phonetic {
+            font-size: 16px;
+            color: #a0aec0;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .card.show {
+            animation: popIn 0.4s ease;
+        }
+
+        .card.speaking {
+            box-shadow: 0 0 30px rgba(79, 70, 229, 0.6);
+            transform: scale(1.05);
+        }
+
+        .reward {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: rewardPop 0.8s ease forwards;
+        }
+
+        @keyframes rewardPop {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.3) rotate(180deg); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); opacity: 0; }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px 25px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            border-radius: 25px 25px 0 0;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            font-size: 36px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            padding: 8px;
+            -webkit-appearance: none;
+        }
+
+        .control-btn:active {
+            transform: scale(0.85);
+        }
+
+        .control-btn span {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+            font-family: sans-serif;
+        }
+
+        .game-overlay {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            padding: 20px;
+        }
+
+        .game-overlay.active {
+            display: flex;
+        }
+
+        .game-question {
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .game-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .game-option {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 25px;
+            font-size: 55px;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .game-option:active {
+            transform: scale(0.92);
+        }
+
+        .game-option.correct {
+            background: #48bb78;
+            animation: bounce 0.5s;
+        }
+
+        .game-option.wrong {
+            background: #f56565;
+            animation: shake 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-15px); }
+            75% { transform: translateX(15px); }
+        }
+
+        .score-board {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            z-index: 50;
+        }
+
+        .hint-text {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .start-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+<!-- 启动覆盖层（强制用户点击解锁音频） -->
+<div class="start-overlay" id="startOverlay">
+    <div style="font-size:60px;margin-bottom:20px;">👋</div>
+    <div style="font-size:24px;margin-bottom:10px;">点击开始学习英语</div>
+    <div style="font-size:14px;opacity:0.7;">需要点击以启用声音</div>
+    <button class="start-btn" onclick="startApp()">开始学习</button>
+</div>
+
+<div class="score-board">⭐ <span id="score">0</span></div>
+
+<div class="header">
+    <h1>🌈 宝宝英语乐园</h1>
+    <div class="stars">⭐ ⭐ ⭐ ⭐ ⭐</div>
+</div>
+
+<div class="game-area">
+    <div class="hint-text">👇 点击卡片听发音，左右滑动换分类</div>
+    
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('animals', this)">🐾 动物</button>
+        <button class="tab" onclick="switchTab('food', this)">🍎 食物</button>
+        <button class="tab" onclick="switchTab('colors', this)">🎨 颜色</button>
+        <button class="tab" onclick="switchTab('body', this)">👋 身体</button>
+        <button class="tab" onclick="switchTab('numbers', this)">🔢 数字</button>
+    </div>
+
+    <div class="cards-grid" id="cardsContainer"></div>
+</div>
+
+<div class="game-overlay" id="gameOverlay">
+    <div class="game-question" id="gameQuestion">哪个是 Cat？</div>
+    <div class="game-options" id="gameOptions"></div>
+    <button class="tab" style="margin-top: 25px;" onclick="closeGame()">🏠 返回学习</button>
+</div>
+
+<div class="controls">
+    <button class="control-btn" onclick="startGame()">
+        🎮<<span>游戏</span>
+    </button>
+    <button class="control-btn" onclick="speakAll()">
+        🔊<<span>跟读</span>
+    </button>
+    <button class="control-btn" onclick="shuffleCards()">
+        🔄<<span>换一批</span>
+    </button>
+    <button class="control-btn" onclick="toggleMusic()">
+        🎵<<span>音乐</span>
+    </button>
+</div>
+
+<script>
+    // ===== 全局状态 =====
+    var audioContext = null;
+    var audioUnlocked = false;
+    var hasSpeech = false;
+    var useFallbackAudio = true; // 默认使用音效，因为大多数浏览器不支持 speechSynthesis
+    var currentTab = 'animals';
+    var score = 0;
+    var isMusicOn = false;
+    var isSpeakingAll = false;
+    var currentCards = [];
+    var tabNames = ['animals', 'food', 'colors', 'body', 'numbers'];
+    
+    // ===== 词汇数据库 =====
+    var vocabulary = {
+        animals: [
+            { icon: '🐱', word: 'Cat', cn: '小猫', freq: 523.25 },
+            { icon: '🐶', word: 'Dog', cn: '小狗', freq: 493.88 },
+            { icon: '🐘', word: 'Elephant', cn: '大象', freq: 392.00 },
+            { icon: '🦁', word: 'Lion', cn: '狮子', freq: 349.23 },
+            { icon: '🐰', word: 'Rabbit', cn: '兔子', freq: 440.00 },
+            { icon: '🐼', word: 'Panda', cn: '熊猫', freq: 329.63 }
+        ],
+        food: [
+            { icon: '🍎', word: 'Apple', cn: '苹果', freq: 523.25 },
+            { icon: '🍌', word: 'Banana', cn: '香蕉', freq: 493.88 },
+            { icon: '🍊', word: 'Orange', cn: '橙子', freq: 440.00 },
+            { icon: '🥛', word: 'Milk', cn: '牛奶', freq: 392.00 },
+            { icon: '🍞', word: 'Bread', cn: '面包', freq: 349.23 },
+            { icon: '🍰', word: 'Cake', cn: '蛋糕', freq: 329.63 }
+        ],
+        colors: [
+            { icon: '🔴', word: 'Red', cn: '红色', freq: 523.25 },
+            { icon: '🔵', word: 'Blue', cn: '蓝色', freq: 493.88 },
+            { icon: '🟡', word: 'Yellow', cn: '黄色', freq: 440.00 },
+            { icon: '🟢', word: 'Green', cn: '绿色', freq: 392.00 },
+            { icon: '🟣', word: 'Purple', cn: '紫色', freq: 349.23 },
+            { icon: '🟠', word: 'Orange', cn: '橙色', freq: 329.63 }
+        ],
+        body: [
+            { icon: '👁️', word: 'Eye', cn: '眼睛', freq: 523.25 },
+            { icon: '👂', word: 'Ear', cn: '耳朵', freq: 493.88 },
+            { icon: '👃', word: 'Nose', cn: '鼻子', freq: 440.00 },
+            { icon: '👄', word: 'Mouth', cn: '嘴巴', freq: 392.00 },
+            { icon: '👋', word: 'Hand', cn: '手', freq: 349.23 },
+            { icon: '🦶', word: 'Foot', cn: '脚', freq: 329.63 }
+        ],
+        numbers: [
+            { icon: '1️⃣', word: 'One', cn: '一', freq: 523.25 },
+            { icon: '2️⃣', word: 'Two', cn: '二', freq: 493.88 },
+            { icon: '3️⃣', word: 'Three', cn: '三', freq: 440.00 },
+            { icon: '4️⃣', word: 'Four', cn: '四', freq: 392.00 },
+            { icon: '5️⃣', word: 'Five', cn: '五', freq: 349.23 },
+            { icon: '🔟', word: 'Ten', cn: '十', freq: 329.63 }
+        ]
+    };
+
+    // ===== 初始化分数 =====
+    try {
+        score = parseInt(localStorage.getItem('babyScore') || '0');
+    } catch (e) {
+        score = 0;
+    }
+
+    // ===== 核心：创建并解锁 AudioContext =====
+    function createAudioContext() {
+        if (audioContext) return audioContext;
+        
+        try {
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                audioContext = new AudioContext();
+                console.log('AudioContext 创建成功，状态:', audioContext.state);
+                return audioContext;
+            }
+        } catch (e) {
+            console.log('AudioContext 创建失败:', e);
+        }
+        return null;
+    }
+
+    // ===== 核心：解锁音频（必须在用户点击中同步调用）=====
+    function unlockAudio() {
+        if (audioUnlocked) return true;
+        
+        console.log('🔓 解锁音频...');
+        
+        // 1. 创建/恢复 AudioContext
+        var ctx = createAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+            console.log('AudioContext resumed');
+        }
+        
+        // 2. 微信浏览器特殊处理：使用 WeixinJSBridge
+        if (typeof WeixinJSBridge !== 'undefined') {
+            try {
+                WeixinJSBridge.invoke('getNetworkType', {}, function(e) {
+                    console.log('微信网络类型:', e.err_msg);
+                    // 微信浏览器中调用这个可以解锁音频
+                });
+            } catch (e) {
+                console.log('WeixinJSBridge 调用失败:', e);
+            }
+        }
+        
+        // 3. 播放一个测试音（强制浏览器允许音频）
+        try {
+            playTestSound();
+        } catch (e) {
+            console.log('测试音播放失败:', e);
+        }
+        
+        audioUnlocked = true;
+        console.log('✅ 音频已解锁');
+        return true;
+    }
+
+    // 播放测试音（用于解锁）
+    function playTestSound() {
+        var ctx = createAudioContext();
+        if (!ctx) return;
+        
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.frequency.value = 440;
+        osc.type = 'sine';
+        
+        var now = ctx.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+        
+        osc.start(now);
+        osc.stop(now + 0.01);
+    }
+
+    // ===== 播放音效（主要播放方式）=====
+    function playSound(freq, duration, type) {
+        var ctx = createAudioContext();
+        if (!ctx) {
+            console.log('❌ AudioContext 不可用');
+            return false;
+        }
+        
+        // 确保不是 suspended 状态
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        
+        try {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.value = freq || 440;
+            osc.type = type || 'sine';
+            
+            var now = ctx.currentTime;
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (duration || 0.4));
+            
+            osc.start(now);
+            osc.stop(now + (duration || 0.4));
+            
+            return true;
+        } catch (e) {
+            console.log('音效播放失败:', e);
+            return false;
+        }
+    }
+
+    // ===== 播放单词（统一入口）=====
+    function speakWord(item, skipReward) {
+        console.log('🎯 点击:', item.word, '频率:', item.freq);
+        
+        // 确保音频已解锁
+        if (!audioUnlocked) {
+            unlockAudio();
+        }
+        
+        // 使用 Web Audio 播放音效（主要方式）
+        // 英文音效
+        playSound(item.freq, 0.4, 'sine');
+        
+        // 中文音效（更低音调）
+        setTimeout(function() {
+            playSound(item.freq * 0.7, 0.4, 'triangle');
+        }, 500);
+        
+        // 确认音效
+        setTimeout(function() {
+            playSound(item.freq * 1.5, 0.2, 'sine');
+        }, 1000);
+        
+        // 奖励动画
+        if (!skipReward) {
+            showReward(item.icon);
+            
+            score += 1;
+            try {
+                localStorage.setItem('babyScore', score);
+            } catch (e) {}
+            
+            var scoreEl = document.getElementById('score');
+            if (scoreEl) scoreEl.textContent = score;
+        }
+    }
+
+    // ===== 显示奖励动画 =====
+    function showReward(emoji) {
+        var oldRewards = document.querySelectorAll('.reward');
+        for (var i = 0; i < oldRewards.length; i++) {
+            if (oldRewards[i].parentNode) {
+                oldRewards[i].parentNode.removeChild(oldRewards[i]);
+            }
+        }
+        
+        var reward = document.createElement('div');
+        reward.className = 'reward';
+        reward.textContent = emoji;
+        document.body.appendChild(reward);
+        
+        setTimeout(function() {
+            if (reward.parentNode) {
+                reward.parentNode.removeChild(reward);
+            }
+        }, 800);
+    }
+
+    // ===== 切换分类 =====
+    function switchTab(tab, btnElement) {
+        currentTab = tab;
+        
+        var allTabs = document.querySelectorAll('.tab');
+        for (var i = 0; i < allTabs.length; i++) {
+            allTabs[i].classList.remove('active');
+        }
+        
+        if (btnElement) {
+            btnElement.classList.add('active');
+        } else {
+            var idx = tabNames.indexOf(tab);
+            if (allTabs[idx]) allTabs[idx].classList.add('active');
+        }
+        
+        renderCards();
+    }
+
+    // ===== 渲染卡片 =====
+    function renderCards() {
+        var container = document.getElementById('cardsContainer');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        currentCards = vocabulary[currentTab] || [];
+        
+        for (var i = 0; i < currentCards.length; i++) {
+            var item = currentCards[i];
+            var card = document.createElement('div');
+            card.className = 'card show';
+            card.style.animationDelay = (i * 0.08) + 's';
+            card.innerHTML = 
+                '<span class="card-icon">' + item.icon + '</span>' +
+                '<div class="card-word">' + item.word + '</div>' +
+                '<div class="card-phonetic">' + item.cn + '</div>';
+            
+            card.addEventListener('click', (function(currentItem) {
+                return function() {
+                    speakWord(currentItem);
+                };
+            })(item));
+            
+            container.appendChild(card);
+        }
+    }
+
+    // ===== 跟读模式 =====
+    function speakAll() {
+        if (isSpeakingAll) return;
+        
+        if (!currentCards || currentCards.length === 0) return;
+        
+        isSpeakingAll = true;
+        
+        var index = 0;
+        
+        function speakNext() {
+            if (!isSpeakingAll) {
+                clearAllHighlight();
+                return;
+            }
+            
+            if (index >= currentCards.length) {
+                isSpeakingAll = false;
+                clearAllHighlight();
+                return;
+            }
+            
+            var item = currentCards[index];
+            
+            clearAllHighlight();
+            var allCards = document.querySelectorAll('.card');
+            if (allCards[index]) {
+                allCards[index].classList.add('speaking');
+                allCards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            speakWord(item, true);
+            
+            index++;
+            setTimeout(speakNext, 2000);
+        }
+        
+        function clearAllHighlight() {
+            var allCards = document.querySelectorAll('.card');
+            for (var i = 0; i < allCards.length; i++) {
+                allCards[i].classList.remove('speaking');
+            }
+        }
+        
+        speakNext();
+    }
+
+    // ===== 打乱卡片 =====
+    function shuffleCards() {
+        var container = document.getElementById('cardsContainer');
+        if (!container) return;
+        
+        var cards = Array.from(container.children);
+        cards.sort(function() { return Math.random() - 0.5; });
+        
+        for (var i = 0; i < cards.length; i++) {
+            container.appendChild(cards[i]);
+        }
+    }
+
+    // ===== 游戏模式 =====
+    function startGame() {
+        var items = vocabulary[currentTab];
+        if (!items || items.length === 0) return;
+        
+        var correctIndex = Math.floor(Math.random() * items.length);
+        var correct = items[correctIndex];
+        
+        var options = [correct];
+        var usedIndices = [correctIndex];
+        
+        while (options.length < 4 && options.length < items.length) {
+            var randomIdx = Math.floor(Math.random() * items.length);
+            if (usedIndices.indexOf(randomIdx) === -1) {
+                usedIndices.push(randomIdx);
+                options.push(items[randomIdx]);
+            }
+        }
+        
+        options.sort(function() { return Math.random() - 0.5; });
+        
+        var questionEl = document.getElementById('gameQuestion');
+        if (questionEl) questionEl.textContent = '哪个是 ' + correct.word + '？';
+        
+        var optsContainer = document.getElementById('gameOptions');
+        if (!optsContainer) return;
+        optsContainer.innerHTML = '';
+        
+        for (var j = 0; j < options.length; j++) {
+            var opt = options[j];
+            var btn = document.createElement('button');
+            btn.className = 'game-option';
+            btn.textContent = opt.icon;
+            
+            btn.addEventListener('click', (function(currentOpt, currentBtn) {
+                return function() {
+                    checkAnswer(currentBtn, currentOpt, correct);
+                };
+            })(opt, btn));
+            
+            optsContainer.appendChild(btn);
+        }
+        
+        var overlay = document.getElementById('gameOverlay');
+        if (overlay) overlay.classList.add('active');
+        
+        // 播放问题提示音
+        setTimeout(function() {
+            playSound(600, 0.3);
+            setTimeout(function() { playSound(800, 0.3); }, 300);
+        }, 300);
+    }
+
+    function checkAnswer(btn, selected, correct) {
+        if (selected.word === correct.word) {
+            btn.classList.add('correct');
+            score += 5;
+            try { localStorage.setItem('babyScore', score); } catch (e) {}
+            
+            var scoreEl = document.getElementById('score');
+            if (scoreEl) scoreEl.textContent = score;
+            
+            showReward('🎉');
+            
+            // 成功音效
+            playSound(523.25, 0.2);
+            setTimeout(function() { playSound(659.25, 0.2); }, 150);
+            setTimeout(function() { playSound(783.99, 0.3); }, 300);
+            
+            setTimeout(function() {
+                closeGame();
+                startGame();
+            }, 1600);
+        } else {
+            btn.classList.add('wrong');
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            // 错误音效
+            playSound(200, 0.3);
+        }
+    }
+
+    function closeGame() {
+        var overlay = document.getElementById('gameOverlay');
+        if (overlay) overlay.classList.remove('active');
+    }
+
+    // ===== 音乐 =====
+    function toggleMusic() {
+        isMusicOn = !isMusicOn;
+        if (isMusicOn) {
+            playSimpleMelody();
+        }
+    }
+
+    function playSimpleMelody() {
+        var notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+        for (var n = 0; n < notes.length; n++) {
+            (function(freq, i) {
+                setTimeout(function() {
+                    playSound(freq, 0.3);
+                }, i * 250);
+            })(notes[n], n);
+        }
+    }
+
+    // ===== 触摸滑动 =====
+    var touchStartX = 0;
+    var touchStartY = 0;
+    
+    document.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        var diffX = touchStartX - e.changedTouches[0].clientX;
+        var diffY = touchStartY - e.changedTouches[0].clientY;
+        
+        if (Math.abs(diffX) > 60 && Math.abs(diffY) < 100) {
+            var currentIdx = tabNames.indexOf(currentTab);
+            var newIdx;
+            
+            if (diffX > 0) {
+                newIdx = (currentIdx + 1) % tabNames.length;
+            } else {
+                newIdx = (currentIdx - 1 + tabNames.length) % tabNames.length;
+            }
+            
+            currentTab = tabNames[newIdx];
+            var allTabs = document.querySelectorAll('.tab');
+            for (var t = 0; t < allTabs.length; t++) {
+                allTabs[t].classList.toggle('active', t === newIdx);
+            }
+            renderCards();
+        }
+    });
+
+    // ===== 启动应用（用户点击后调用）=====
+    function startApp() {
+        console.log('🚀 用户点击启动');
+        
+        // 解锁音频
+        unlockAudio();
+        
+        // 隐藏启动覆盖层
+        var overlay = document.getElementById('startOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+        
+        // 初始化
+        init();
+    }
+
+    // ===== 页面初始化 =====
+    function init() {
+        var scoreEl = document.getElementById('score');
+        if (scoreEl) scoreEl.textContent = score;
+        
+        renderCards();
+        
+        console.log('✅ 初始化完成');
+    }
+
+    // 页面加载时不自动初始化，等待用户点击 startApp
+</script>
+
+</body>
+</html>
